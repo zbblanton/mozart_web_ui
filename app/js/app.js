@@ -2,7 +2,7 @@ class AppComponent extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = {page: "CreateContainersPage"};
+    this.state = {page: "ListWorkersPage"};
     this.handleShowPage = this.handleShowPage.bind(this);
   }
 
@@ -37,6 +37,11 @@ class PageComponent extends React.Component {
           <HomePageComponent />
         );
         break;ListContainersPageComponent
+      case "ListWorkersPage":
+        return (
+          <ListWorkersPageComponent />
+        );
+        break;
       case "ListAccountsPage":
         return (
           <ListAccountsPageComponent />
@@ -87,7 +92,7 @@ class TopMenuComponent extends React.Component {
           Workers
         </a>
         <div className="navbar-dropdown">
-          <a className="navbar-item" onClick={() => this.props.handleShowPage("TestPage")}>
+          <a className="navbar-item" onClick={() => this.props.handleShowPage("ListWorkersPage")}>
             List
           </a>
         </div>
@@ -267,7 +272,240 @@ class CreateAccountsPageComponent extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = {accounts: []};
+    this.state = {Type: "", name: "", description: "", submitted: false, accesskey: "", secretkey: "", success: true, errorMsg: ""};
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleSubmit(e) {
+    e.preventDefault();
+
+    var name = document.getElementById("name").value
+    var description = document.getElementById("description").value
+    this.state.name = name
+    this.state.description = description
+    this.setState(this.state)
+
+    this.sendData(JSON.stringify({"Type": "service", "Name": name, "Description": description}))
+  }
+
+  verifySubmit() {
+
+  }
+
+  sendData(postData) {
+    fetch('api/accounts/create', {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: postData
+    }).then(res=>res.json())
+      .then(res => {
+      console.log(res)
+      if(res.success) {
+        this.state.accesskey = res.Account["AccessKey"]
+        this.state.secretkey = res.Account["SecretKey"]
+      }
+      else {
+        this.state.success = false
+        this.state.errorMsg = res.error
+      }
+      this.state.submitted = true
+      this.setState(this.state)
+    });
+  }
+
+  render() {
+    if(!this.state.success){
+      return (
+        <div>
+          <section className="hero is-info">
+            <div className="hero-body">
+              <div className="container">
+                <h1 className="title">
+                  Create Account
+                </h1>
+              </div>
+            </div>
+          </section>
+          <br />
+          <div className="container">
+            <article className="message is-danger">
+              <div className="message-header">
+                <p>Error creating account {this.state.name}</p>
+              </div>
+              <div className="message-body">
+                <p>{this.state.errorMsg}</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      );
+    }
+    else if(this.state.submitted){
+      return (
+        <div>
+          <section className="hero is-info">
+            <div className="hero-body">
+              <div className="container">
+                <h1 className="title">
+                  Create Account
+                </h1>
+              </div>
+            </div>
+          </section>
+          <br />
+          <div className="container">
+            <article className="message is-warning">
+              <div className="message-header">
+                <p>Account created for {this.state.name}</p>
+              </div>
+              <div className="message-body">
+                <h3>Please save the keys below! This is the only time they will be shown.</h3>
+                <br />
+                <p>Account: {this.state.name}</p>
+                <p>Access Key: {this.state.accesskey}</p>
+                <p>Secret Key: {this.state.secretkey}</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      );
+    }
+    else {
+      return (
+        <form id="form" onSubmit={this.handleSubmit}>
+        <section className="hero is-info">
+          <div className="hero-body">
+            <div className="container">
+              <h1 className="title">
+                Create Account
+              </h1>
+            </div>
+          </div>
+        </section>
+        <br />
+        <div className="container">
+          <MessageComponent />
+          <article className="message is-warning">
+            <div className="message-body">
+              Currently only service accounts are supported.
+            </div>
+          </article>
+          <div className="field">
+            <label className="label">Name</label>
+            <div className="control">
+              <input required id="name" className="input" type="text" placeholder="" />
+            </div>
+          </div>
+          <div className="field">
+            <label className="label">Password</label>
+            <div className="control">
+              <input className="input" type="password" placeholder="" disabled />
+            </div>
+          </div>
+          <div className="field">
+            <label className="label">Confirm Password</label>
+            <div className="control">
+              <input className="input" type="password" placeholder="" disabled />
+            </div>
+          </div>
+          <div className="field">
+            <label className="label">Description</label>
+            <div className="control">
+              <input required id="description" className="input" type="text" placeholder="" />
+            </div>
+          </div>
+          <div className="field has-addons has-addons-right">
+            <div className="select">
+              <select disabled>
+                <option value="service">Service Account</option>
+                <option value="user">User Account</option>
+              </select>
+            </div>
+          </div>
+          <div className="field has-addons has-addons-right">
+            <div className="control">
+              <button className="button is-link">Submit</button>
+            </div>
+          </div>
+        </div>
+        </form>
+      );
+    }
+  }
+}
+
+class ListWorkersListComponent extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    if(this.props.workers.length > 0){
+      return (
+        this.props.workers.map(function (worker) {
+          return (
+            <div className="column is-one-third" key={worker["AgentIp"]}>
+            <div className="card">
+              <div className="card-content">
+                <p className="title">
+                  {worker["AgentIp"]}
+                </p>
+                <p className="subtitle">{worker["Status"]}</p>
+              </div>
+              <footer className="card-footer">
+                <a href="#" className="card-footer-item">View</a>
+              </footer>
+            </div>
+            </div>
+          );
+        })
+      );
+    }
+    else {
+      return(<p>No workers.</p>);
+    }
+
+  }
+}
+
+class ListWorkersPageComponent extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {workers: []};
+  }
+
+  getWorkers() {
+    fetch('api/workers/list', {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then(res=>res.json())
+      .then(res => {
+        //So the json parser has a hard time with object json instead of an array
+        //Which means we must do a double loop through the Accounts. The inner one
+        //is to grab each key and value and save it, then the outer loop places each
+        //account into an array instead of a map.
+        console.log(res.Workers)
+        var workersArray = []
+        Object.keys(res.Workers).forEach(function(key) {
+            var workerMap = new Map()
+            Object.keys(res.Workers[key]).forEach(function(key2) {
+                workerMap[key2] = res.Workers[key][key2]
+            });
+            workersArray.push(workerMap)
+        });
+        console.log(workersArray[0]["Containers"]["hellotest"])
+        this.state.workers = workersArray
+        this.setState(this.state)
+    });
+  }
+
+  componentDidMount() {
+    this.getWorkers()
   }
 
   render() {
@@ -277,55 +515,15 @@ class CreateAccountsPageComponent extends React.Component {
         <div className="hero-body">
           <div className="container">
             <h1 className="title">
-              Create Account
+              Workers
             </h1>
           </div>
         </div>
       </section>
       <br />
       <div className="container">
-        <MessageComponent />
-        <article className="message is-warning">
-          <div className="message-body">
-            Currently only service accounts are supported.
-          </div>
-        </article>
-        <div className="field">
-          <label className="label">Name</label>
-          <div className="control">
-            <input className="input" type="text" placeholder="" />
-          </div>
-        </div>
-        <div className="field">
-          <label className="label">Password</label>
-          <div className="control">
-            <input className="input" type="password" placeholder="" disabled />
-          </div>
-        </div>
-        <div className="field">
-          <label className="label">Confirm Password</label>
-          <div className="control">
-            <input className="input" type="password" placeholder="" disabled />
-          </div>
-        </div>
-        <div className="field">
-          <label className="label">Description</label>
-          <div className="control">
-            <input className="input" type="text" placeholder="" />
-          </div>
-        </div>
-        <div className="field has-addons has-addons-right">
-          <div className="select">
-            <select disabled>
-              <option>Service Account</option>
-              <option>User Account</option>
-            </select>
-          </div>
-        </div>
-        <div className="field has-addons has-addons-right">
-          <div className="control">
-            <button className="button is-link">Submit</button>
-          </div>
+        <div className="columns is-multiline is-mobile">
+        <ListWorkersListComponent workers={this.state.workers}/>
         </div>
       </div>
       </div>
